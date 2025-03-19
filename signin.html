@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In</title>
     <link rel="stylesheet" href="signinscreen.css">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
 </head>
 <body>
     <div class="container">
@@ -27,7 +28,7 @@
                 <button type="submit" class="login-btn">Log in</button>
             </form>
             
-            <p class="forgot-password"><a href="#">Forgot password?</a></p>
+            <p class="forgot-password"><a href="forgot-password.html">Forgot password?</a></p>
             <p class="signup">Don't have an account? <a href="signup.html">Sign up</a></p> <!-- Corrected link -->
         </div>
 
@@ -39,39 +40,54 @@
         </div>
     </div>
 
-    <script>
-        function validateForm(event) {
+    <script type="module">
+        import { auth, db } from "./scripts/firebaseConfig.js";
+        import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+        import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+    
+        async function validateForm(event) {
             event.preventDefault(); // Prevent form submission
-
-            let isValid = true;
+    
             let emailUsername = document.getElementById("emailUsername").value.trim();
             let password = document.getElementById("password").value.trim();
-
+    
             let emailError = document.getElementById("emailError");
             let passwordError = document.getElementById("passwordError");
-
+    
             emailError.innerText = "";
             passwordError.innerText = "";
-
+    
             if (emailUsername === "") {
                 emailError.innerText = "Email or username is required.";
-                isValid = false;
+                return false;
             }
-
+    
             if (password === "") {
                 passwordError.innerText = "Password is required.";
-                isValid = false;
+                return false;
             }
-
-            if (isValid) {
-                // Redirect to homepage.html upon successful validation
-                window.location.href = "homepage.html";
-                return true;
-            }
-
+    
+            let email = emailUsername;
+    
+            // **Check if input is a username (Firestore Query)**
+        
+            // **Sign in using Firebase Authentication**
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    alert("Login successful! Redirecting...");
+                    window.location.href = "homepage.html"; // Redirect after login
+                })
+                .catch((error) => {
+                    passwordError.innerText = error.message; // Display Firebase error
+                });
+    
             return false;
         }
+    
+        // Attach function to window object
+        window.validateForm = validateForm;
     </script>
+    
 
     <style>
         .error-message {

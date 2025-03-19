@@ -51,13 +51,14 @@
             </div>
         </div>
     </div>
-
-    <script>
+    <script type="module">
+        import { auth, db } from "./scripts/firebaseConfig.js";
+        import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+        import { setDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+    
         function validateSignUp(event) {
             event.preventDefault(); // Prevent default form submission
-
-            let isValid = true;
-
+    
             let firstName = document.getElementById("firstName").value.trim();
             let lastName = document.getElementById("lastName").value.trim();
             let indexNumber = document.getElementById("indexNumber").value.trim();
@@ -65,30 +66,32 @@
             let username = document.getElementById("username").value.trim();
             let password = document.getElementById("password").value.trim();
             let confirmPassword = document.getElementById("confirmPassword").value.trim();
-
+    
             let nameError = document.getElementById("nameError");
             let indexError = document.getElementById("indexError");
             let emailError = document.getElementById("emailError");
             let usernameError = document.getElementById("usernameError");
             let passwordError = document.getElementById("passwordError");
-
+    
             // Clear previous errors
             nameError.innerText = "";
             indexError.innerText = "";
             emailError.innerText = "";
             usernameError.innerText = "";
             passwordError.innerText = "";
-
+    
+            let isValid = true;
+    
             if (firstName === "" || lastName === "") {
                 nameError.innerText = "First and last name are required.";
                 isValid = false;
             }
-
+    
             if (indexNumber === "") {
                 indexError.innerText = "Index number is required.";
                 isValid = false;
             }
-
+    
             if (email === "") {
                 emailError.innerText = "Email is required.";
                 isValid = false;
@@ -96,12 +99,12 @@
                 emailError.innerText = "Enter a valid email address.";
                 isValid = false;
             }
-
+    
             if (username === "") {
                 usernameError.innerText = "Username is required.";
                 isValid = false;
             }
-
+    
             if (password === "" || confirmPassword === "") {
                 passwordError.innerText = "Both password fields are required.";
                 isValid = false;
@@ -112,25 +115,47 @@
                 passwordError.innerText = "Passwords do not match.";
                 isValid = false;
             }
-
-            if (isValid) {
-                // Redirect to homepage.html upon successful validation
-                window.location.href = "homepage.html";
-                return true;
+    
+            if (!isValid) {
+                return false;
             }
-
+    
+            // **Firebase Authentication: Sign Up the User**
+            createUserWithEmailAndPassword(auth, email, password)
+                .then(async (userCredential) => {
+                    const user = userCredential.user;
+    
+                    // **Store user details in Firestore**
+                    try {
+                        await setDoc(doc(db, "users", user.uid), {
+                            firstName: firstName,
+                            lastName: lastName,
+                            indexNumber: indexNumber,
+                            username: username,
+                            email: email,
+                            uid: user.uid,
+                            createdAt: new Date()
+                        });
+    
+                        alert("Signup successful! Redirecting...");
+                        window.location.href = "homepage.html"; // Redirect after signup
+                    } catch (error) {
+                        console.error("Error storing user data:", error);
+                        passwordError.innerText = "Signup successful, but user data could not be saved.";
+                    }
+                })
+                .catch((error) => {
+                    passwordError.innerText = error.message; // Display Firebase error
+                });
+    
             return false;
         }
+    
+        // Attach function to window object
+        window.validateSignUp = validateSignUp;
     </script>
-
-    <style>
-        .error-message {
-            color: red;
-            font-size: 12px;
-            display: block;
-            margin-bottom: 10px;
-        }
-    </style>
-
+    
+    
+    <script src="./scripts/firebaseConfig.js"></script>
 </body>
 </html>

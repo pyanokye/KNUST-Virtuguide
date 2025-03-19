@@ -5,18 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Virtuguide</title>
     <link rel="stylesheet" href="homepagescreen.css">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script type="module">
+        import { saveToFavorites } from "./scripts/favourites.js";
+        window.saveToFavorites = saveToFavorites;
+    </script>
+    
     <style>
-        /* Make links look like normal text */
         .location-list a {
-            color: black; /* Make text black */
-            text-decoration: none; /* Remove underline */
-            font-weight: normal; /* Keep normal text weight */
+            color: black;
+            text-decoration: none;
+            font-weight: normal;
         }
-
-        /* Optional: Ensure links don’t change color on hover */
         .location-list a:hover {
             color: black;
+        }
+        .fav-icon {
+            cursor: pointer;
+            color: red;
+            font-size: 30px;
+            position: absolute;
+            margin-top: 20px;
+            margin-right: 100px;
+            background: white;
+            padding: 5px;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
@@ -28,13 +42,12 @@
     </div>
 
     <div class="container">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="logo">
                 <i class="virtuguide-locations"></i>
                 <span>KNUST Virtuguide</span>
             </div>
-            <input type="text" class="search" placeholder="Search...">
+            <input type="text" id="search-box" class="search" placeholder="Search for locations...">
             <div class="filters">
                 <label>Show me:</label>
                 <select>
@@ -66,7 +79,7 @@
                 </li>
                 <li>
                     <img src="assets/repulogo.png" alt="Republic Hall">
-                    <a href="Republic.html"><span>Republic  Hall</span></a>
+                    <a href="Republic.html"><span>Republic Hall</span></a>
                     <p>Popular mixed hall</p>
                 </li>
                 <li>
@@ -81,16 +94,102 @@
                 </li>
             </ul>
         </div>
-
-        <!-- Map Section -->
         <div id="map"></div>
     </div>
+
     <script src="screens.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAOc_aOf-SO8JX328V_R34FOBwxiB0bLE4&callback=initMap&libraries=geometry" async defer></script>
+    
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            document.body.classList.add("loaded");
-        });
+        let map, autocomplete, userMarker, polyline, favIcon;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 6.6745, lng: -1.5711 },
+                zoom: 15,
+            });
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                        };
+                        map.setCenter(userLocation);
+                        userMarker = new google.maps.Marker({
+                            position: userLocation,
+                            map: map,
+                            title: "Your Location",
+                            label: { text: "You", fontWeight: "bold" }
+                        });
+                    },
+                    () => alert("Geolocation failed. Using default location."),
+                );
+            }
+
+            const input = document.getElementById("search-box");
+            autocomplete = new google.maps.places.Autocomplete(input);
+            autocomplete.addListener("place_changed", function () {
+                let place = autocomplete.getPlace();
+                if (!place.geometry) return;
+                
+                const destination = place.geometry.location;
+                const marker = new google.maps.Marker({ 
+                    position: destination, 
+                    map: map, 
+                    title: place.name, 
+                    label: { text: place.name, fontWeight: "bold" }
+                });
+                drawPolyline(destination, place.name);
+                addFavoriteIcon(marker, place);
+            });
+        }
+
+        function drawPolyline(destination, destinationName) {
+            if (!userMarker) {
+                alert("User location not found.");
+                return;
+            }
+            const userLocation = userMarker.getPosition();
+            
+            if (polyline) {
+                polyline.setMap(null);
+            }
+            
+            polyline = new google.maps.Polyline({
+                path: [userLocation, destination],
+                geodesic: true,
+                strokeColor: "#008000",
+                strokeOpacity: 1.0,
+                strokeWeight: 4,
+                map: map,
+            });
+        }
+
+        function addFavoriteIcon(marker, place) {
+            if (favIcon) {
+                favIcon.remove();
+            }
+
+            favIcon = document.createElement("i");
+            favIcon.classList.add("fas", "fa-heart", "fav-icon");
+            favIcon.onclick = () => saveToFavorites(place.name, place.geometry.location.lat(), place.geometry.location.lng());
+            map.controls[google.maps.ControlPosition.TOP_RIGHT].push(favIcon);
+        }
+
+        async function saveToFavorites(name, lat, lng) {
+            try {
+                await addDoc(collection(db, "favourites"), {
+                    name: name,
+                    location: { lat, lng }
+                });
+                alert(name + " has been saved to your favorites!");
+            } catch (error) {
+                console.error("Error saving location: ", error);
+            }
+        }
     </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAOc_aOf-SO8JX328V_R34FOBwxiB0bLE4&libraries=places&callback=initMap" async defer></script>
 </body>
 </html>
