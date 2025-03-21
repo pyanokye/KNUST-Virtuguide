@@ -8,154 +8,137 @@
 </head>
 <body>
     <div class="container">
-        <!-- Left Side (Signup Form) -->
         <div class="signup-section">
             <div class="logo">
                 <img src="assets/logo.png" alt="Logo">
             </div>
-            <h2>Create Your VIRTUGUIDE Account</h2>
+            <h2>Create Your VIRTUALGUIDE Account</h2>
             <p>Explore the campus with ease and navigate iconic landmarks.</p>
             
-            <form onsubmit="return validateSignUp(event)">
+            <form id="signupForm">
                 <div class="input-group">
-                    <input type="text" id="firstName" placeholder="First Name">
-                    <input type="text" id="lastName" placeholder="Last Name">
+                    <input type="text" id="firstName" placeholder="First Name" required>
+                    <input type="text" id="lastName" placeholder="Last Name" required>
                 </div>
-                <small class="error-message" id="nameError"></small>
-
-                <input type="text" id="indexNumber" placeholder="Index Number">
-                <small class="error-message" id="indexError"></small>
-
-                <input type="email" id="email" placeholder="Email">
-                <small class="error-message" id="emailError"></small>
-
-                <input type="text" id="username" placeholder="Username">
-                <small class="error-message" id="usernameError"></small>
-
+                <input type="text" id="indexNumber" placeholder="Index Number" required>
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="text" id="username" placeholder="Username" required>
                 <div class="input-group">
-                    <input type="password" id="password" placeholder="Create Password">
-                    <input type="password" id="confirmPassword" placeholder="Confirm Password">
+                    <input type="password" id="password" placeholder="Create Password" required>
+                    <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
                 </div>
-                <small class="error-message" id="passwordError"></small>
-
                 <button type="submit" class="signup-btn">Sign Up</button>
             </form>
-            
             <p class="signin">Already have an account? <a href="signin.html">Sign in</a></p>
         </div>
-
-        <!-- Right Side (Preview Section) -->
         <div class="preview-section">
             <div class="preview-content">
                 <img src="assets/tour-img-7.jpg" alt="Preview Image">
             </div>
         </div>
     </div>
-    <script type="module">
-        import { auth, db } from "./scripts/firebaseConfig.js";
-        import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-        import { setDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
-    
-        function validateSignUp(event) {
-            event.preventDefault(); // Prevent default form submission
-    
-            let firstName = document.getElementById("firstName").value.trim();
-            let lastName = document.getElementById("lastName").value.trim();
-            let indexNumber = document.getElementById("indexNumber").value.trim();
-            let email = document.getElementById("email").value.trim();
-            let username = document.getElementById("username").value.trim();
-            let password = document.getElementById("password").value.trim();
-            let confirmPassword = document.getElementById("confirmPassword").value.trim();
-    
-            let nameError = document.getElementById("nameError");
-            let indexError = document.getElementById("indexError");
-            let emailError = document.getElementById("emailError");
-            let usernameError = document.getElementById("usernameError");
-            let passwordError = document.getElementById("passwordError");
-    
-            // Clear previous errors
-            nameError.innerText = "";
-            indexError.innerText = "";
-            emailError.innerText = "";
-            usernameError.innerText = "";
-            passwordError.innerText = "";
-    
-            let isValid = true;
-    
-            if (firstName === "" || lastName === "") {
-                nameError.innerText = "First and last name are required.";
-                isValid = false;
+<!-- OTP Modal -->
+<div id="otpModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Enter OTP</h3>
+        <p>A one-time password has been sent to your email.</p>
+        <input type="text" id="otpCode" placeholder="Enter OTP" required>
+        <button id="verifyOtpBtn">Verify</button>
+        <p id="otpError" class="error-message"></p>
+    </div>
+</div>
+
+</div>
+
+<script>
+    document.getElementById("signupForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+        
+        const email = document.getElementById("email").value;
+        
+        try {
+            const response = await fetch("http://localhost:3000/api/otp/generate-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                showModal(); // Show OTP modal
+            } else {
+                alert("Failed to send OTP. Please try again.");
             }
-    
-            if (indexNumber === "") {
-                indexError.innerText = "Index number is required.";
-                isValid = false;
-            }
-    
-            if (email === "") {
-                emailError.innerText = "Email is required.";
-                isValid = false;
-            } else if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-                emailError.innerText = "Enter a valid email address.";
-                isValid = false;
-            }
-    
-            if (username === "") {
-                usernameError.innerText = "Username is required.";
-                isValid = false;
-            }
-    
-            if (password === "" || confirmPassword === "") {
-                passwordError.innerText = "Both password fields are required.";
-                isValid = false;
-            } else if (password.length < 6) {
-                passwordError.innerText = "Password must be at least 6 characters.";
-                isValid = false;
-            } else if (password !== confirmPassword) {
-                passwordError.innerText = "Passwords do not match.";
-                isValid = false;
-            }
-    
-            if (!isValid) {
-                return false;
-            }
-    
-            // **Firebase Authentication: Sign Up the User**
-            createUserWithEmailAndPassword(auth, email, password)
-                .then(async (userCredential) => {
-                    const user = userCredential.user;
-    
-                    // **Store user details in Firestore**
-                    try {
-                        await setDoc(doc(db, "users", user.uid), {
-                            firstName: firstName,
-                            lastName: lastName,
-                            indexNumber: indexNumber,
-                            username: username,
-                            email: email,
-                            uid: user.uid,
-                            createdAt: new Date()
-                        });
-    
-                        alert("Signup successful! Redirecting...");
-                        window.location.href = "homepage.html"; // Redirect after signup
-                    } catch (error) {
-                        console.error("Error storing user data:", error);
-                        passwordError.innerText = "Signup successful, but user data could not be saved.";
-                    }
-                })
-                .catch((error) => {
-                    passwordError.innerText = error.message; // Display Firebase error
-                });
-    
-            return false;
+        } catch (error) {
+            console.error("Error sending OTP:", error);
         }
-    
-        // Attach function to window object
-        window.validateSignUp = validateSignUp;
+    });
+
+    // Function to show the modal
+    function showModal() {
+        const modal = document.getElementById("otpModal");
+        modal.style.display = "flex";
+    }
+
+    // Function to hide the modal
+    function hideModal() {
+        const modal = document.getElementById("otpModal");
+        modal.style.display = "none";
+    }
+
+    document.getElementById("verifyOtpBtn").addEventListener("click", async function() {
+        const email = document.getElementById("email").value;
+        const otp = document.getElementById("otpCode").value;
+
+        try {
+            const response = await fetch("http://localhost:3000/api/otp/verify-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, otp })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                hideModal(); // Hide OTP modal on success
+                alert("OTP Verified! Registering your account...");
+                registerUser(); // Call function to register user
+            } else {
+                document.getElementById("otpError").innerText = "Invalid OTP. Please try again.";
+            }
+        } catch (error) {
+            console.error("Error verifying OTP:", error);
+        }
+    });
+
+    async function registerUser() {
+        const userData = {
+            firstName: document.getElementById("firstName").value,
+            lastName: document.getElementById("lastName").value,
+            indexNumber: document.getElementById("indexNumber").value,
+            email: document.getElementById("email").value,
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value
+        };
+        
+        try {
+            const response = await fetch("http://localhost:3000/api/otp/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(userData)
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                alert("Registration Successful!");
+                window.location.href = "homepage.html";
+            } else {
+                alert("Failed to register user");
+            }
+        } catch (error) {
+            console.error("Error registering user:", error);
+        }
+    }
+
     </script>
-    
-    
-    <script src="./scripts/firebaseConfig.js"></script>
 </body>
 </html>
