@@ -9,31 +9,105 @@
     <style>
         /* Make links look like normal text */
         .location-list a {
-            color: black; /* Make text black */
-            text-decoration: none; /* Remove underline */
-            font-weight: normal; /* Keep normal text weight */
+            color: black;
+            text-decoration: none;
+            font-weight: normal;
         }
 
         /* Optional: Ensure links don’t change color on hover */
         .location-list a:hover {
             color: black;
         }
+
+        /* Sidebar styling */
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            background: #f4f4f4;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+            padding-top: 50px; /* Prevent overlap with header */
+        }
+
+        /* Initially hide the sidebar on small screens */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+        }
+
+        /* Header container */
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1100;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Hamburger button styling */
+        .hamburger {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            margin-right: 15px;
+        }
+
+        /* Title styling */
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* Ensure the hamburger is visible only on small screens */
+        @media (max-width: 768px) {
+            .hamburger {
+                display: block;
+            }
+            .sidebar {
+                padding-top: 60px; /* More space for header */
+            }
+        }
+
+        /* Adjust sidebar position so it doesn’t cover map buttons */
+        @media (max-width: 768px) {
+            .sidebar {
+                z-index: 999;
+            }
+        }
+
+        /* Map container */
+        #map {
+            position: relative;
+            z-index: 100;
+        }
     </style>
 </head>
 <body>
-    <div class="user-icon">
-        <a href="userpage.html">
-            <img src="assets/usericon.png" alt="User">
-        </a>
+
+    <!-- Header with Hamburger Menu and Title -->
+    <div class="header">
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <span class="title">KNUST Virtuguide</span>
     </div>
 
     <div class="container">
         <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="logo">
-                <i class="virtuguide-locations"></i>
-                <span>KNUST Virtuguide</span>
-            </div>
+        <div class="sidebar" id="sidebar">
             <input type="text" class="search" placeholder="Search...">
             <div class="filters">
                 <label>Show me:</label>
@@ -66,7 +140,7 @@
                 </li>
                 <li>
                     <img src="assets/repulogo.png" alt="Republic Hall">
-                    <a href="Republic.html"><span>Republic  Hall</span></a>
+                    <a href="Republic.html"><span>Republic Hall</span></a>
                     <p>Popular mixed hall</p>
                 </li>
                 <li>
@@ -85,12 +159,14 @@
         <!-- Map Section -->
         <div id="map"></div>
     </div>
+
     <script src="screens.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAOc_aOf-SO8JX328V_R34FOBwxiB0bLE4&callback=initMap&libraries=geometry" async defer></script>
+
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            document.body.classList.add("loaded");
-        });
+        function toggleSidebar() {
+            document.getElementById("sidebar").classList.toggle("active");
+        }
     </script>
 </body>
 </html>
