@@ -3,13 +3,15 @@ on:
   push:
     branches: [ main ]
 permissions:
-  contents: write  # Grants write access to the repository contents
+  contents: write
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: false  # Explicitly disable submodule fetching
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
